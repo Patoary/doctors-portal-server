@@ -16,13 +16,20 @@ async function run() {
     try {
         await client.connect()
        const servicesCollection = client.db('doctors_portal').collection('services');
-
+       const bookingCollection = client.db('doctors_portal').collection('bookings');
+        
        app.get('/service', async(req, res) =>{
            const query = {};
            const cursor = servicesCollection.find(query);
            const services = await cursor.toArray();
            res.send(services);
        });
+
+       app.post('/booking', async(req, res) =>{
+           const booking = req.body;
+           const resutl = await bookingCollection.insertOne(booking);
+           res.send(resutl);
+       })
     }
     finally {
 
