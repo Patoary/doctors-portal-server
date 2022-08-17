@@ -17,6 +17,7 @@ async function run() {
         await client.connect()
         const servicesCollection = client.db('doctors_portal').collection('services');
         const bookingCollection = client.db('doctors_portal').collection('bookings');
+        const userCollection = client.db('doctors_portal').collection('users');
 
         app.get('/service', async (req, res) => {
             const query = {};
@@ -24,6 +25,18 @@ async function run() {
             const services = await cursor.toArray();
             res.send(services);
         });
+
+        app.put('/user/:email', async(req, res)=>{
+            const email = req.body.email;
+            const user = req.body;
+            const filter = {email: email};
+            const options ={upsert: true};
+            const updateDoc = {
+                $set: user,
+            };
+            const result = await userCollection.updateOne(filter,updateDoc,options);
+            res.send(result);
+        })
 
         // Warning:
         //This is not the proper way to query.
