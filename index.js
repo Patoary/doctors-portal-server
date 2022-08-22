@@ -34,10 +34,11 @@ async function run() {
         const servicesCollection = client.db('doctors_portal').collection('services');
         const bookingCollection = client.db('doctors_portal').collection('bookings');
         const userCollection = client.db('doctors_portal').collection('users');
+        const doctorCollection = client.db('doctors_portal').collection('doctors');
 
         app.get('/service', async (req, res) => {
             const query = {};
-            const cursor = servicesCollection.find(query);
+            const cursor = servicesCollection.find(query).project({ name: 1 });
             const services = await cursor.toArray();
             res.send(services);
         });
@@ -47,11 +48,11 @@ async function run() {
             res.send(users);
         });
 
-        app.get('/admin/:email', async(req, res) =>{
+        app.get('/admin/:email', async (req, res) => {
             const email = req.params.email;
-            const user = await userCollection.findOne({email: email});
+            const user = await userCollection.findOne({ email: email });
             const isAdmin = user.role === 'admin';
-            res.send({admin : isAdmin});
+            res.send({ admin: isAdmin });
         });
 
         app.put('/user/admin/:email', verifyJWT, async (req, res) => {
@@ -65,8 +66,8 @@ async function run() {
                 };
                 const result = await userCollection.updateOne(filter, updateDoc);
                 res.send(result);
-            }else{
-                res.status(403).send({message: 'forbidden'});
+            } else {
+                res.status(403).send({ message: 'forbidden' });
             }
 
         });
@@ -144,6 +145,12 @@ async function run() {
             }
             const resutl = await bookingCollection.insertOne(booking);
             return res.send({ success: true, resutl });
+        });
+
+        app.post('/doctor', async(req, res) =>{
+            const doctor = req.body;
+            const result = await doctorCollection.insertOne(doctor);
+            res.send(result);
         });
 
     }
