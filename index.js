@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken');
 const app = express();
 require('dotenv').config();
 const { MongoClient, ServerApiVersion } = require('mongodb');
+var nodemailer = require('nodemailer');
+var sgTransport = require('nodemailer-sendgrid-transport');
+
 const port = process.env.PORT || 4000;
 
 
@@ -27,6 +30,44 @@ function verifyJWT(req, res, next) {
         next();
     });
 };
+
+// for sending email ↓
+
+const emailSenderOptions = {
+    auth: {
+        api_key: process.env.EMAIL_SENDER_KEY
+    }
+}
+const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
+
+
+function sendAppointmentEmail(booking) {
+    const {patient, patientName, treatment, date, slot } = booking;
+    var email = {
+        from: process.env.EMAIL_SENDER,
+        to: patient,
+        subject: `Your Appointment for ${treatment} is on ${date} at ${slot} is Confirmed`,
+        text: `Your Appointment for ${treatment} is on ${date} at ${slot} is Confirmed`,
+        html: `
+        <div>
+        <p>Hello ${patientName},</p>
+        <h3>Your Appointment for ${treatment} is confirmed</h3>
+        <p>Looking forward to seeing you on ${slot}.</p>
+        <h3>Our Address</h3>
+        <p>Dhake, Bangladesh</p>
+        </div>
+        `
+      };
+      emailClient.sendMail(email, function(err, info){
+        if (err ){
+          console.log(err);
+        }
+        else {
+          console.log('Message sent: ',info);
+        }
+    });
+};
+// end sending email funtion ↑
 
 async function run() {
     try {
@@ -150,10 +191,12 @@ async function run() {
                 return res.send({ success: false, booking: exists })
             }
             const resutl = await bookingCollection.insertOne(booking);
+            console.log('sending email');
+            sendAppointmentEmail(booking);
             return res.send({ success: true, resutl });
         });
 
-        app.get('/doctor', verifyJWT, verifyAdmin, async(req, res) =>{
+        app.get('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
             const doctors = await doctorCollection.find().toArray();
             res.send(doctors);
         });
@@ -163,10 +206,10 @@ async function run() {
             const result = await doctorCollection.insertOne(doctor);
             res.send(result);
         });
-         
+
         app.delete('/doctor/:email', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
-            const filter = {email: email};
+            const filter = { email: email };
             const result = await doctorCollection.deleteOne(filter);
             res.send(result);
         });
