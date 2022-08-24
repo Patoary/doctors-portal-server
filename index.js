@@ -3,7 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const app = express();
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
 
@@ -181,7 +181,14 @@ async function run() {
                 return res.status(403).send({ message: 'Forbidden Access' });
             }
 
-        })
+        });
+
+        app.get('/booking/:id', verifyJWT, async(req, res) =>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const booking = await bookingCollection.findOne(query);
+            res.send(booking);
+        });
 
         app.post('/booking', async (req, res) => {
             const booking = req.body;
