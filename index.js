@@ -43,7 +43,7 @@ const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
 
 
 function sendAppointmentEmail(booking) {
-    const {patient, patientName, treatment, date, slot } = booking;
+    const { patient, patientName, treatment, date, slot } = booking;
     var email = {
         from: process.env.EMAIL_SENDER,
         to: patient,
@@ -58,13 +58,41 @@ function sendAppointmentEmail(booking) {
         <p>Dhake, Bangladesh</p>
         </div>
         `
-      };
-      emailClient.sendMail(email, function(err, info){
-        if (err ){
-          console.log(err);
+    };
+    emailClient.sendMail(email, function (err, info) {
+        if (err) {
+            console.log(err);
         }
         else {
-          console.log('Message sent: ',info);
+            console.log('Message sent: ', info);
+        }
+    });
+};
+
+function sendPaymentConfirationEmail(booking) {
+    const { patient, patientName, treatment, date, slot } = booking;
+    var email = {
+        from: process.env.EMAIL_SENDER,
+        to: patient,
+        subject: `We have received your payment for ${treatment} is on ${date} at ${slot} is Confirmed`,
+        text: `Your payment for this  Appointment  ${treatment} is on ${date} at ${slot} is Confirmed`,
+        html: `
+        <div>
+        <p>Hello ${patientName},</p>
+        <h3>Thank you for your payment .</h3>
+        <h3>We have received your payment</h3>
+        <p>Looking forward to seeing you on ${slot}.</p>
+        <h3>Our Address</h3>
+        <p>Dhake, Bangladesh</p>
+        </div>
+        `
+    };
+    emailClient.sendMail(email, function (err, info) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            console.log('Message sent: ', info);
         }
     });
 };
@@ -90,17 +118,17 @@ async function run() {
             }
         }
         // for payment
-        app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             const service = req.body;
             const price = service.price;
-            const amount = price*100;
+            const amount = price * 100;
             const paymentIntent = await stripe.paymentIntents.create({
-              amount : amount,
-              currency: 'usd',
-              payment_method_types:['card']
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
             });
-            res.send({clientSecret: paymentIntent.client_secret});
-          });
+            res.send({ clientSecret: paymentIntent.client_secret });
+        });
 
         app.get('/service', async (req, res) => {
             const query = {};
@@ -197,9 +225,9 @@ async function run() {
 
         });
 
-        app.get('/booking/:id', verifyJWT, async(req, res) =>{
+        app.get('/booking/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
-            const query = {_id: ObjectId(id)};
+            const query = { _id: ObjectId(id) };
             const booking = await bookingCollection.findOne(query);
             res.send(booking);
         });
@@ -217,10 +245,10 @@ async function run() {
             return res.send({ success: true, resutl });
         });
 
-        app.patch('/booking/:id', verifyJWT, async(req, res) =>{
+        app.patch('/booking/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const payment = req.body;
-            const filter = {_id: ObjectId(id)};
+            const filter = { _id: ObjectId(id) };
             const updateDoc = {
                 $set: {
                     paid: true,
