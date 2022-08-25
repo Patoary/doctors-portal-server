@@ -6,6 +6,7 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const port = process.env.PORT || 4000;
 
@@ -87,6 +88,18 @@ async function run() {
                 res.status(403).send({ message: 'forbidden' });
             }
         }
+        // for payment
+        app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
+            const service = req.body;
+            const price = service.price;
+            const amount = price*100;
+            const paymentIntent = await stripe.paymentIntents.create({
+              amount : amount,
+              currency: 'usd',
+              payment_method_types:['card']
+            });
+            res.send({clientSecret: paymentIntent.client_secret});
+          });
 
         app.get('/service', async (req, res) => {
             const query = {};
@@ -128,7 +141,7 @@ async function run() {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '12h' })
             res.send({ result, token });
         });
 
